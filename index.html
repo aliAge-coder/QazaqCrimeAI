@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QazaqCrimeAI - Қылмыстық талдау платформасы</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700;800&display=swap');
+        
+        :root {
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, h4 {
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #93c5fd 100%);
+        }
+        
+        .kazakh-pattern {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Simple_wave.svg/1200px-Simple_wave.svg.png');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0% { transform: translate(0,  0px); }
+            50%  { transform: translate(0, 15px); }
+            100%   { transform: translate(0, -0px); }    
+        }
+        
+        .slide-in {
+            animation: slideIn 0.8s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .rotate {
+            animation: rotate 15s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .city-tab.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+        }
+        
+        .glow:hover {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.9);
+        }
+        
+        .map-container {
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .crime-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        
+        .risk-high {
+            background-color: #ef4444;
+            border: 2px solid #b91c1c;
+        }
+        
+        .risk-medium {
+            background-color: #f59e0b;
+            border: 2px solid #b45309;
+        }
+        
+        .risk-low {
+            background-color: #10b981;
+            border: 2px solid #047857;
+        }
+        
+        .hexagon {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .ai-chip {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        .crime-timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+        
+        .crime-timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #3b82f6, #10b981);
+            border-radius: 2px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -40px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #3b82f6;
+        }
+        
+        .timeline-date {
+            position: absolute;
+            left: -150px;
+            top: 5px;
+            width: 120px;
+            text-align: right;
+            color: #64748b;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="relative overflow-x-hidden">
+    <!-- Animated background elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-20 left-20 w-32 h-32 rounded-full bg-blue-100 opacity-20 floating" style="animation-delay: 0s;"></div>
+        <div class="absolute top-1/3 right-40 w-24 h-24 rounded-full bg-green-100 opacity-20 floating" style="animation-delay: 0.5s;"></div>
+        <div class="absolute bottom-1/4 left-1/3 w-40 h-40 rounded-full bg-red-100 opacity-20 floating" style="animation-delay: 1s;"></div>
+        <div class="absolute top-2/3 right-1/4 w-28 h-28 rounded-full bg-purple-100 opacity-20 floating" style="animation-delay: 1.5s;"></div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="bg-white shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <div class="hexagon bg-blue-600 w-10 h-10 flex items-center justify-center mr-3">
+                            <i class="fas fa-shield-alt text-white text-lg"></i>
+                        </div>
+                        <span class="font-bold text-2xl text-blue-600">QazaqCrime<span class="text-blue-800">AI</span></span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="nav-link text-gray-800 hover:text-blue-600 font-medium">Басты бет</a>
+                    <a href="#" class="nav-link text-gray-800 hover:text-blue-600 font-medium">Талдау</a>
+                    <a href="#" class="nav-link text-gray-800 hover:text-blue-600 font-medium">Болжамдар</a>
+                    <a href="#" class="nav-link text-gray-800 hover:text-blue-600 font-medium">Карта</a>
+                    <a href="#" class="nav-link text-gray-800 hover:text-blue-600 font-medium">Есептер</a>
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition flex items-center glow">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Кіру
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button class="outline-none text-gray-800">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative py-20 md:py-32 hero-gradient text-white overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full kazakh-pattern opacity-10"></div>
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-blue-900/20"></div>
+        <div class="container mx-auto px-6 relative">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0 slide-in">
+                    <div class="ai-chip inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold mb-6">
+                        <i class="fas fa-robot mr-2"></i> AI Қуатты
+                    </div>
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">Қазақстандағы қылмысты <span class="text-blue-200">талдау</span> және <span class="text-blue-200">болжау</span></h1>
+                    <p class="text-xl mb-8 max-w-lg">Машиналық оқыту әдістерін пайдалана отырып, қылмыстық оқиғаларды талдау және алдын алуға арналған инновациялық платформа</p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <button class="bg-white text-blue-800 font-bold rounded-lg py-3 px-8 hover:bg-blue-100 transition duration-300 flex items-center justify-center glow">
+                            <i class="fas fa-play-circle mr-2"></i> Демо көру
+                        </button>
+                        <button class="border-2 border-white text-white font-bold rounded-lg py-3 px-8 hover:bg-white hover:text-blue-800 transition duration-300 flex items-center justify-center">
+                            <i class="fas fa-download mr-2"></i> Қосымшаны жүктеу
+                        </button>
+                    </div>
+                    <div class="mt-8 flex items-center space-x-6">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <span>Нақты уақытта</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-3">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <span>90%+ дәлдік</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center relative">
+                    <div class="relative w-full max-w-xl">
+                        <img src="https://images.unsplash.com/photo-1581092921461-39b2f1c9f740?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Қазақстан картасы" class="rounded-2xl shadow-2xl w-full border-4 border-white relative z-10">
+                        <div class="absolute -bottom-5 -right-5 bg-white p-4 rounded-full shadow-xl z-20 rotate">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Flag_of_Kazakhstan.svg" alt="Қазақстан туы" class="h-12">
+                        </div>
+                        <div class="absolute top-10 left-10 bg-red-500 text-white p-4 rounded-full shadow-xl z-20 pulse">
+                            <i class="fas fa-exclamation text-xl"></i>
+                        </div>
+                        <div class="absolute bottom-20 right-20 bg-yellow-500 text-white p-4 rounded-full shadow-xl z-20 pulse" style="animation-delay: 0.5s;">
+                            <i class="fas fa-exclamation text-xl"></i>
+                        </div>
+                        <div class="absolute top-1/3 left-1/4 bg-blue-500 text-white p-4 rounded-full shadow-xl z-20 pulse" style="animation-delay: 1s;">
+                            <i class="fas fa-map-marker-alt text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- City Selector -->
+    <section class="bg-gray-50 py-8 shadow-inner">
+        <div class="container mx-auto px-6">
+            <h2 class="text-2xl font-bold text-center mb-8">Қалалар бойынша талдау</h2>
+            <div class="flex overflow-x-auto space-x-4 pb-4 px-2">
+                <button class="city-tab active px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all" data-city="almaty">
+                    <i class="fas fa-mountain mr-2"></i>Алматы
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="astana">
+                    <i class="fas fa-landmark mr-2"></i>Астана
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="shymkent">
+                    <i class="fas fa-tree mr-2"></i>Шымкент
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="aktobe">
+                    <i class="fas fa-sun mr-2"></i>Ақтөбе
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="karaganda">
+                    <i class="fas fa-industry mr-2"></i>Қарағанды
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="atyrau">
+                    <i class="fas fa-oil-well mr-2"></i>Атырау
+                </button>
+                <button class="city-tab px-6 py-3 rounded-lg text-lg font-medium whitespace-nowrap transition-all bg-white shadow-sm hover:bg-gray-100" data-city="pavlodar">
+                    <i class="fas fa-factory mr-2"></i>Павлодар
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <div class="container mx-auto px-6 py-16">
+        <!-- City Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12" id="cityStats">
+            <!-- Stats will be loaded here by JavaScript -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Crime Map -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300">
+                <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <h3 class="text-2xl font-semibold flex items-center">
+                        <i class="fas fa-map-marked-alt text-blue-600 mr-3"></i>
+                        Қылмыстық карта
+                    </h3>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-gray-500">Нақты уақытта</span>
+                        <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    </div>
+                </div>
+                <div class="map-container" id="crimeMap">
+                    <!-- Leaflet map will be initialized here -->
+                </div>
+                <div class="p-6 bg-gray-50">
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
+                            <span>Жоғары тәуекел</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                            <span>Орташа тәуекел</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+                            <span>Төмен тәуекел</span>
+                        </div>
+                        <div class="flex items-center ml-auto">
+                            <div class="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                            <span>Патрульдер</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Crime Types -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300">
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-2xl font-semibold flex items-center">
+                        <i class="fas fa-chart-pie text-blue-600 mr-3"></i>
+                        Қылмыс түрлері
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="crimeTypeChart" height="300"></canvas>
+                </div>
+                <div class="px-6 pb-6">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-red-500 mr-3"></div>
+                                <div>
+                                    <p class="font-medium">Ұрлық</p>
+                                    <p class="text-sm text-gray-500">Үйлер, дүкендер, көліктер</p>
+                                </div>
+                            </div>
+                            <span class="font-bold text-lg">42%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-blue-500 mr-3"></div>
+                                <div>
+                                    <p class="font-medium">Қақтығыс</p>
+                                    <p class="text-sm text-gray-500">Жеке адамдар арасында</p>
+                                </div>
+                            </div>
+                            <span class="font-bold text-lg">28%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-yellow-500 mr-3"></div>
+                                <div>
+                                    <p class="font-medium">Үйге қарсы қылмыс</p>
+                                    <p class="text-sm text-gray-500">Үй шаруашылықтарында</p>
+                                </div>
+                            </div>
+                            <span class="font-bold text-lg">15%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-green-500 mr-3"></div>
+                                <div>
+                                    <p class="font-medium">Басқа</p>
+                                    <p class="text-sm text-gray-500">Құқық бұзушылықтар</p>
+                                </div>
+                            </div>
+                            <span class="font-bold text-lg">15%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Time Analysis -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300 mb-12">
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-2xl font-semibold flex items-center">
+                    <i class="fas fa-clock text-blue-600 mr-3"></i>
+                    Уақыт бойынша қылмыстық статистика
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="md:w-2/3">
+                        <canvas id="crimeTrendChart" height="200"></canvas>
+                    </div>
+                    <div class="md:w-1/3">
+                        <h4 class="text-lg font-semibold mb-4">Ең қауіпті уақыттар</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium">Кешкі 18:00-21:00</span>
+                                    <span class="font-bold">35%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-red-500 h-2.5 rounded-full" style="width: 35%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium">Түнгі 00:00-03:00</span>
+                                    <span class="font-bold">28%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 28%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium">Таңертең 06:00-09:00</span>
+                                    <span class="font-bold">12%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 12%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Predictive Analysis -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300">
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-2xl font-semibold flex items-center">
+                        <i class="fas fa-chart-line text-blue-600 mr-3"></i>
+                        Тәуекелді болжау
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="riskPredictionChart" height="250"></canvas>
+                </div>
+                <div class="p-6 bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-500 mr-3 text-xl"></i>
+                        <p>Машиналық оқыту модельдері әр ауданның қылмыстық белсенділік деңгейін болжайды</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300">
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-2xl font-semibold flex items-center">
+                        <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                        Келесі 7 күнге болжам
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Дс</p>
+                            <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-exclamation text-red-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Жоғары</p>
+                            <p class="text-xs text-gray-500">85%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Сс</p>
+                            <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-exclamation text-red-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Жоғары</p>
+                            <p class="text-xs text-gray-500">78%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Ср</p>
+                            <div class="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-exclamation text-yellow-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Орташа</p>
+                            <p class="text-xs text-gray-500">65%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Бс</p>
+                            <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-check text-green-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Төмен</p>
+                            <p class="text-xs text-gray-500">42%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Жм</p>
+                            <div class="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-check text-green-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Төмен</p>
+                            <p class="text-xs text-gray-500">38%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Сб</p>
+                            <div class="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-exclamation text-yellow-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Орташа</p>
+                            <p class="text-xs text-gray-500">55%</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-gray-500 font-medium">Жс</p>
+                            <div class="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto my-2">
+                                <i class="fas fa-exclamation text-red-500 text-xl"></i>
+                            </div>
+                            <p class="font-semibold">Жоғары</p>
+                            <p class="text-xs text-gray-500">72%</p>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <div class="flex items-start">
+                            <i class="fas fa-lightbulb text-blue-500 text-xl mt-1 mr-3"></i>
+                            <div>
+                                <p class="font-semibold text-blue-800">AI ұсынысы</p>
+                                <p class="text-sm text-blue-700">Дүйсенбі, сейсенбі және жексенбі кештеріне патрульді көбейту қажет, тарихи үлгілер мен ауа райы болжамдарына сүйене отырып.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Crime Timeline -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300 mb-12">
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-2xl font-semibold flex items-center">
+                    <i class="fas fa-history text-blue-600 mr-3"></i>
+                    Соңғы қылмыстық оқиғалар
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="crime-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">Бүгін, 14:30</div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h4 class="font-bold text-lg mb-2">Алматы, Алмалы ауданы</h4>
+                            <p class="text-gray-700">Дүкеннен ұрлық. Камералар арқылы анықталған. Құны: 450,000 ₸.</p>
+                            <div class="mt-2 flex items-center text-sm text-gray-500">
+                                <i class="fas fa-map-marker-alt mr-1"></i> Абай көшесі, 123
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">Кеше, 22:15</div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h4 class="font-bold text-lg mb-2">Астана, Сарыарқа ауданы</h4>
+                            <p class="text-gray-700">Көлік ұрлығы. AI жүйесі болжаған аумақта орын алды.</p>
+                            <div class="mt-2 flex items-center text-sm text-gray-500">
+                                <i class="fas fa-map-marker-alt mr-1"></i> Қошқарбай батыр көшесі, 45
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">Кеше, 18:40</div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h4 class="font-bold text-lg mb-2">Шымкент, Еңбекші ауданы</h4>
+                            <p class="text-gray-700">Қақтығыс. Екі адам жарақат алды. Полиция оқиға орнына жетті.</p>
+                            <div class="mt-2 flex items-center text-sm text-gray-500">
+                                <i class="fas fa-map-marker-alt mr-1"></i> Тәуелсіздік даңғылы, 78
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- News Section -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover transition duration-300 mb-12">
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-2xl font-semibold flex items-center">
+                    <i class="fas fa-newspaper text-blue-600 mr-3"></i>
+                    Қылмыстық жаңалықтар
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="relative">
+                            <img src="https://tengrinews.kz/userdata/news/2024/news_531211/thumb_m/photo_467699.jpeg" alt="News" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 bg-blue-600 text-white px-3 py-1 text-sm font-semibold">Алматы</div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold text-lg mb-2">Алматыдағы ұрлық оқиғаларының саны азайды</h4>
+                            <p class="text-gray-600 mb-3">Соңғы 3 айда 15%-ға азайды. Полиция жаңа қауіпсіздік жүйесін енгізгеніне байланысты.</p>
+                            <div class="flex justify-between items-center text-sm text-gray-500">
+                                <span>12.04.2024</span>
+                                <a href="#" class="text-blue-600 hover:underline">Толығырақ</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="relative">
+                            <img src="https://tengrinews.kz/userdata/news/2024/news_530911/thumb_m/photo_467350.jpeg" alt="News" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 bg-blue-600 text-white px-3 py-1 text-sm font-semibold">Астана</div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold text-lg mb-2">Астанада жаңа қауіпсіздік жүйесі іске қосылды</h4>
+                            <p class="text-gray-600 mb-3">AI технологияларын пайдаланатын жаңа қауіпсіздік жүйесі қылмысты азайтуға көмектеседі.</p>
+                            <div class="flex justify-between items-center text-sm text-gray-500">
+                                <span>10.04.2024</span>
+                                <a href="#" class="text-blue-600 hover:underline">Толығырақ</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border rounded-xl overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="relative">
+                            <img src="https://tengrinews.kz/userdata/news/2024/news_530511/thumb_m/photo_466914.jpeg" alt="News" class="w-full h-48 object-cover">
+                            <div class="absolute bottom-0 left-0 bg-blue-600 text-white px-3 py-1 text-sm font-semibold">Шымкент</div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold text-lg mb-2">Шымкентте қылмыскерлерді ұстау операциясы</h4>
+                            <p class="text-gray-600 mb-3">5 адам қамауға алынды. Олар бірнеше дүкен ұрлығына қатысқан.</p>
+                            <div class="flex justify-between items-center text-sm text-gray-500">
+                                <span>08.04.2024</span>
+                                <a href="#" class="text-blue-600 hover:underline">Толығырақ</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Features -->
+        <div class="bg-gradient-to-r from-blue-800 to-blue-600 rounded-2xl shadow-xl overflow-hidden mb-12">
+            <div class="p-8 text-white">
+                <h2 class="text-3xl font-bold mb-6 text-center">Машиналық оқыту қуаты</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <i class="fas fa-brain text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-center">Предиктивті талдау</h3>
+                        <p class="text-center">Тарихи деректерді талдап, қылмыстың ықтимал орын алуын болжайды</p>
+                    </div>
+                    <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <i class="fas fa-map-marked-alt text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-center">Ыстық нүктелер</h3>
+                        <p class="text-center">Қылмыстың жиі орын алатын аймақтарды анықтайды және визуализациялайды</p>
+                    </div>
+                    <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <i class="fas fa-chart-line text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-center">Трендтер</h3>
+                        <p class="text-center">Қылмыстық белсенділіктің уақыт бойынша өзгеруін бақылайды</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="hexagon bg-blue-600 w-12 h-12 flex items-center justify-center mr-3">
+                            <i class="fas fa-shield-alt text-white text-xl"></i>
+                        </div>
+                        <span class="font-bold text-2xl">QazaqCrime<span class="text-blue-400">AI</span></span>
+                    </div>
+                    <p class="text-gray-400 mb-4">Қазақстандағы қылмысты талдау және болжауға арналған жасанды интеллект платформасы.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 transition">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-400 transition">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-red-600 transition">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-purple-600 transition">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Байланыс</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-center">
+                            <i class="fas fa-map-marker-alt text-blue-400 mr-3"></i> 
+                            Шымкент, Самал 3
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-phone text-blue-400 mr-3"></i> 
+                            +7 707 532 6951
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-envelope text-blue-400 mr-3"></i> 
+                            info@qazaqcrime.kz
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-clock text-blue-400 mr-3"></i> 
+                            Дс-Жм 09:00-18:00
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Сілтемелер</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition flex items-center">
+                            <i class="fas fa-chevron-right text-blue-400 mr-2 text-xs"></i> Қызмет көрсету шарттары
+                        </a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition flex items-center">
+                            <i class="fas fa-chevron-right text-blue-400 mr-2 text-xs"></i> Құпиялылық саясаты
+                        </a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition flex items-center">
+                            <i class="fas fa-chevron-right text-blue-400 mr-2 text-xs"></i> API құжаттамасы
+                        </a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition flex items-center">
+                            <i class="fas fa-chevron-right text-blue-400 mr-2 text-xs"></i> Жиі қойылатын сұрақтар
+                        </a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition flex items-center">
+                            <i class="fas fa-chevron-right text-blue-400 mr-2 text-xs"></i> Біз туралы
+                        </a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Жаңалықтарға жазылу</h4>
+                    <p class="text-gray-400 mb-4">Соңғы жаңалықтар мен жаңартулар туралы хабардар болыңыз.</p>
+                    <div class="flex">
+                        <input type="email" placeholder="Электрондық пошта" class="bg-gray-800 text-white px-4 py-2 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="mt-6">
+                        <p class="text-gray-400 mb-2">Қосымшаны жүктеу:</p>
+                        <div class="flex space-x-2">
+                            <a href="#" class="bg-gray-800 text-white px-4 py-2 rounded text-sm flex items-center hover:bg-gray-700 transition">
+                                <i class="fab fa-apple mr-2"></i> App Store
+                            </a>
+                            <a href="#" class="bg-gray-800 text-white px-4 py-2 rounded text-sm flex items-center hover:bg-gray-700 transition">
+                                <i class="fab fa-google-play mr-2"></i> Play
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 QazaqCrimeAI. Барлық құқықтар қорғалған.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Extended city data
+        const cities = {
+            almaty: {
+                name: "Алматы",
+                incidents: 1248,
+                change: 12,
+                hotspots: 8,
+                newHotspots: 2,
+                accuracy: 89,
+                improvement: 5,
+                districts: ["Алмалы", "Ауэзов", "Бостандық", "Жетісу", "Медеу", "Наурызбай", "Түркісіб", "Алатау"],
+                riskLevels: [85, 72, 65, 78, 82, 68, 75, 70],
+                trendData: [85, 78, 86, 94, 102, 115, 125, 118, 96, 88, 76, 82],
+                coordinates: [43.2220, 76.8512],
+                zoom: 11
+            },
+            astana: {
+                name: "Астана",
+                incidents: 876,
+                change: -8,
+                hotspots: 5,
+                newHotspots: 1,
+                accuracy: 92,
+                improvement: 3,
+                districts: ["Алматы", "Есіл", "Сарыарқа", "Байқоңыр", "Ақтау", "Қосшы"],
+                riskLevels: [78, 65, 70, 60, 72, 68],
+                trendData: [65, 70, 72, 80, 85, 90, 95, 88, 82, 75, 70, 68],
+                coordinates: [51.1282, 71.4307],
+                zoom: 12
+            },
+            shymkent: {
+                name: "Шымкент",
+                incidents: 654,
+                change: 5,
+                hotspots: 4,
+                newHotspots: 0,
+                accuracy: 85,
+                improvement: 2,
+                districts: ["Абай", "Еңбекші", "Қаратау", "Аль-Фараби", "Тұран"],
+                riskLevels: [70, 65, 60, 72, 68],
+                trendData: [50, 55, 60, 65, 70, 75, 80, 78, 72, 65, 60, 58],
+                coordinates: [42.3417, 69.5901],
+                zoom: 12
+            },
+            aktobe: {
+                name: "Ақтөбе",
+                incidents: 432,
+                change: -3,
+                hotspots: 3,
+                newHotspots: 1,
+                accuracy: 82,
+                improvement: 4,
+                districts: ["Орталық", "Ақжол", "Шығыс", "Батыс"],
+                riskLevels: [65, 60, 55, 58],
+                trendData: [40, 42, 45, 50, 55, 60, 65, 62, 58, 52, 48, 45],
+                coordinates: [50.2839, 57.1667],
+                zoom: 12
+            },
+            karaganda: {
+                name: "Қарағанды",
+                incidents: 567,
+                change: 10,
+                hotspots: 5,
+                newHotspots: 2,
+                accuracy: 87,
+                improvement: 6,
+                districts: ["Орталық", "Қазыбек би", "Маңғыстау", "Октябрь"],
+                riskLevels: [72, 68, 65, 70],
+                trendData: [45, 50, 55, 60, 65, 70, 75, 72, 68, 62, 58, 55],
+                coordinates: [49.8047, 73.0956],
+                zoom: 12
+            },
+            atyrau: {
+                name: "Атырау",
+                incidents: 345,
+                change: 2,
+                hotspots: 2,
+                newHotspots: 0,
+                accuracy: 80,
+                improvement: 3,
+                districts: ["Орталық", "Атырау", "Қызылқұм", "Махамбет"],
+                riskLevels: [60, 55, 50, 58],
+                trendData: [35, 40, 45, 50, 55, 60, 65, 62, 58, 52, 48, 45],
+                coordinates: [47.1076, 51.9141],
+                zoom: 12
+            },
+            pavlodar: {
+                name: "Павлодар",
+                incidents: 421,
+                change: -5,
+                hotspots: 3,
+                newHotspots: 1,
+                accuracy: 84,
+                improvement: 4,
+                districts: ["Орталық", "Ақсу", "Қалқаман", "Шақша"],
+                riskLevels: [62, 58, 55, 60],
+                trendData: [40, 42, 45, 50, 55, 60, 65, 62, 58, 52, 48, 45],
+                coordinates: [52.2864, 76.9404],
+                zoom: 12
+            }
+        };
+
+        // Current city
+        let currentCity = "almaty";
+        let crimeMap;
+
+        // Initialize Leaflet map
+        function initMap() {
+            crimeMap = L.map('crimeMap').setView(cities[currentCity].coordinates, cities[currentCity].zoom);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(crimeMap);
+            
+            updateMapMarkers();
+        }
+
+        // Initialize charts
+        const crimeTypeCtx = document.getElementById('crimeTypeChart').getContext('2d');
+        const crimeTrendCtx = document.getElementById('crimeTrendChart').getContext('2d');
+        const riskPredictionCtx = document.getElementById('riskPredictionChart').getContext('2d');
+
+        const crimeTypeChart = new Chart(crimeTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ұрлық', 'Қақтығыс', 'Үйге қарсы қылмыс', 'Басқа'],
+                datasets: [{
+                    data: [42, 28, 15, 15],
+                    backgroundColor: ['#EF4444', '#3B82F6', '#F59E0B', '#10B981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        const crimeTrendChart = new Chart(crimeTrendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Қаң', 'Ақп', 'Нау', 'Сәу', 'Мам', 'Мау', 'Шіл', 'Там', 'Қыр', 'Қаз', 'Қар', 'Жел'],
+                datasets: [{
+                    label: 'Қылмыс оқиғалары',
+                    data: cities.almaty.trendData,
+                    fill: true,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#3B82F6',
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#3B82F6',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        const riskPredictionChart = new Chart(riskPredictionCtx, {
+            type: 'bar',
+            data: {
+                labels: cities.almaty.districts,
+                datasets: [{
+                    label: 'Тәуекел деңгейі',
+                    data: cities.almaty.riskLevels,
+                    backgroundColor: [
+                        '#EF4444', '#F59E0B', '#10B981', '#EF4444', 
+                        '#F59E0B', '#10B981', '#EF4444', '#F59E0B'
+                    ],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update city stats
+        function updateCityStats(city) {
+            const cityData = cities[city];
+            
+            // Update stats cards
+            document.getElementById('cityStats').innerHTML = `
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover transition duration-300">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                            <i class="fas fa-exclamation-triangle text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Қылмыстық статистика</h3>
+                            <p class="text-gray-500">${cityData.name}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500">Жалпы оқиғалар</p>
+                            <p class="text-3xl font-bold">${cityData.incidents}</p>
+                        </div>
+                        <div class="${cityData.change > 0 ? 'text-red-500' : 'text-green-500'} flex items-center">
+                            <i class="fas fa-arrow-${cityData.change > 0 ? 'up' : 'down'} mr-1"></i>
+                            <span>${Math.abs(cityData.change)}% өткен аймен салыстырғанда</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover transition duration-300">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
+                            <i class="fas fa-fire text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Ыстық нүктелер</h3>
+                            <p class="text-gray-500">${cityData.name}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500">Жоғары тәуекелді аймақтар</p>
+                            <p class="text-3xl font-bold">${cityData.hotspots}</p>
+                        </div>
+                        <div class="${cityData.newHotspots > 0 ? 'text-red-500' : 'text-green-500'} flex items-center">
+                            <i class="fas fa-arrow-${cityData.newHotspots > 0 ? 'up' : 'down'} mr-1"></i>
+                            <span>${cityData.newHotspots} жаңа осы аптада</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover transition duration-300">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i class="fas fa-robot text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">AI болжамдары</h3>
+                            <p class="text-gray-500">${cityData.name}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500">Дәлдік деңгейі</p>
+                            <p class="text-3xl font-bold">${cityData.accuracy}%</p>
+                        </div>
+                        <div class="text-green-500 flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            <span>${cityData.improvement}% жақсарту</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md p-6 card-hover transition duration-300">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i class="fas fa-map-marker-alt text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Аймақтар</h3>
+                            <p class="text-gray-500">${cityData.name}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-gray-500">Қарастырылып жатқан аудандар</p>
+                            <p class="text-3xl font-bold">${cityData.districts.length}</p>
+                        </div>
+                        <div class="text-blue-500 flex items-center">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <span>Картаны қараңыз</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update charts
+            crimeTrendChart.data.datasets[0].data = cityData.trendData;
+            crimeTrendChart.update();
+            
+            riskPredictionChart.data.labels = cityData.districts;
+            riskPredictionChart.data.datasets[0].data = cityData.riskLevels;
+            riskPredictionChart.update();
+            
+            // Update map view and markers
+            crimeMap.setView(cities[city].coordinates, cities[city].zoom);
+            updateMapMarkers();
+        }
+
+        // Update map markers
+        function updateMapMarkers() {
+            // Clear existing markers
+            crimeMap.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    crimeMap.removeLayer(layer);
+                }
+            });
+
+            const cityData = cities[currentCity];
+            
+            // Add district markers
+            cityData.districts.forEach((district, index) => {
+                const risk = cityData.riskLevels[index];
+                
+                // Generate random coordinates within city bounds
+                const lat = cityData.coordinates[0] + (Math.random() - 0.5) * 0.2;
+                const lng = cityData.coordinates[1] + (Math.random() - 0.5) * 0.2;
+                
+                let markerClass = 'risk-medium';
+                if (risk > 75) markerClass = 'risk-high';
+                if (risk < 50) markerClass = 'risk-low';
+                
+                const marker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        className: 'crime-marker ' + markerClass,
+                        html: `<span>${risk}</span>`,
+                        iconSize: [24, 24]
+                    })
+                }).addTo(crimeMap);
+                
+                marker.bindPopup(`
+                    <div class="font-bold">${district}</div>
+                    <div class="text-sm">Тәуекел деңгейі: ${risk}%</div>
+                    <div class="text-xs text-gray-500 mt-1">Соңғы оқиға: ${Math.floor(Math.random() * 24)} сағат бұрын</div>
+                `);
+            });
+            
+            // Add patrol markers
+            for (let i = 0; i < 5; i++) {
+                const lat = cityData.coordinates[0] + (Math.random() - 0.5) * 0.2;
+                const lng = cityData.coordinates[1] + (Math.random() - 0.5) * 0.2;
+                
+                const patrolMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        className: 'crime-marker bg-blue-500 border-blue-700',
+                        html: '<i class="fas fa-shield-alt"></i>',
+                        iconSize: [24, 24]
+                    })
+                }).addTo(crimeMap);
+                
+                patrolMarker.bindPopup(`
+                    <div class="font-bold">Патруль №${i+1}</div>
+                    <div class="text-sm">Статус: Белсенді</div>
+                    <div class="text-xs text-gray-500 mt-1">Соңғы белсенділік: ${Math.floor(Math.random() * 60)} минут бұрын</div>
+                `);
+            }
+        }
+
+        // City tab switching
+        const cityTabs = document.querySelectorAll('.city-tab');
+        cityTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                cityTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentCity = this.dataset.city;
+                updateCityStats(currentCity);
+                
+                // Animate the change
+                anime({
+                    targets: '.card-hover',
+                    translateY: [10, 0],
+                    opacity: [0, 1],
+                    duration: 800,
+                    easing: 'easeOutExpo',
+                    delay: anime.stagger(100)
+                });
+            });
+        });
+
+        // Initialize with Almaty data
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            updateCityStats(currentCity);
+            
+            // Initial animations
+            anime({
+                targets: '.slide-in',
+                translateX: [-50, 0],
+                opacity: [0, 1],
+                duration: 1000,
+                easing: 'easeOutExpo'
+            });
+
+            anime({
+                targets: '.card-hover',
+                translateY: [20, 0],
+                opacity: [0, 1],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: anime.stagger(100)
+            });
+            
+            // Animate hexagon logo
+            anime({
+                targets: '.hexagon',
+                rotate: 360,
+                duration: 15000,
+                loop: true,
+                easing: 'linear'
+            });
+        });
+
+        // Simulate real-time data updates
+        setInterval(() => {
+            // Update crime trend chart with new random data
+            crimeTrendChart.data.datasets[0].data = crimeTrendChart.data.datasets[0].data.map(value => 
+                Math.max(10, Math.min(150, value + Math.floor(Math.random() * 10) - 5))
+            );
+            crimeTrendChart.update();
+            
+            // Update risk prediction chart with new random data
+            riskPredictionChart.data.datasets[0].data = riskPredictionChart.data.datasets[0].data.map(value => 
+                Math.max(20, Math.min(95, value + Math.floor(Math.random() * 10) - 5))
+            );
+            riskPredictionChart.update();
+            
+            // Update map markers
+            updateMapMarkers();
+        }, 5000);
+    </script>
+</body>
+</html>
